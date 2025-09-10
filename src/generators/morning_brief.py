@@ -6,16 +6,36 @@ Creates daily TTS-ready scripts with SSML markup
 
 import logging
 import os
+import sys
 from datetime import datetime
 from typing import Dict, Any
 
+# Add parent directory to path for imports when run directly
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import yaml
 from gtts import gTTS
-from core.ai_analyst import AIAnalyst
+from core.ai_analyst_brief import AIAnalystBrief
+import tempfile
+
+# Handle pydub import - fallback if not available due to Python 3.13+ issues
+try:
+    from pydub import AudioSegment
+    HAS_PYDUB = True
+except ImportError:
+    HAS_PYDUB = False
+    class AudioSegment:
+        @staticmethod
+        def silent(*args, **kwargs):
+            return None
+        @staticmethod
+        def from_mp3(*args, **kwargs):
+            return None
 
 
 class MorningBriefGenerator:
-    """Generate daily morning meeting scripts with TTS"""
+    """Generate daily morning brief with domain-specific segments and alternating TTS voices"""
     
     def __init__(self, config_path: str = "config.yaml"):
         """Initialize morning brief generator"""
@@ -26,187 +46,192 @@ class MorningBriefGenerator:
         self.output_dir = "data/output/briefs"
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # Initialize AI analyst
-        self.ai_analyst = AIAnalyst(config_path)
+        # Initialize AI analyst for brief generation
+        self.ai_analyst = AIAnalystBrief(config_path)
     
-    def _format_number(self, number: float, decimals: int = 2) -> str:
-        """Format number for speech"""
-        if number >= 1000:
-            return f"{number:,.{decimals}f}"
-        return f"{number:.{decimals}f}"
     
-    def _generate_greeting(self) -> str:
-        """Generate morning greeting with date"""
-        now = datetime.now()
-        day_name = now.strftime("%A")
-        date_str = now.strftime("%B %d, %Y")
+    def generate_segments(self, data: Dict[str, Any]) -> Dict[str, str]:
+        """Generate 4 domain-specific segments using AI analyst"""
+        self.logger.info("Generating domain-specific morning brief segments")
         
-        greeting = f"""<speak>
-Good morning, and welcome to today's YenSense AI morning brief.
-<break time="500ms"/>
-It's {day_name}, {date_str}, and I'm here with your Japan macro and FX update.
-<break time="700ms"/>
-</speak>"""
-        return greeting
-    
-    def _generate_fx_section(self, fx_data: Dict[str, float], ai_commentary: str) -> str:
-        """Generate AI-powered FX market commentary"""
-        usd_jpy = fx_data.get('USD/JPY', 147.25)
-        eur_jpy = fx_data.get('EUR/JPY', 158.90)
+        segments = {}
         
-        fx_section = f"""<speak>
-Let's start with the foreign exchange markets.
-<break time="500ms"/>
-Dollar-yen is currently trading at {self._format_number(usd_jpy)}, 
-and Euro-yen is at {self._format_number(eur_jpy)}.
-<break time="500ms"/>
-{ai_commentary}
-<break time="700ms"/>
-For our retail listeners, this means it takes about {int(usd_jpy)} yen to buy one US dollar.
-<break time="700ms"/>
-</speak>"""
-        return fx_section
-    
-    def _generate_macro_section(self, macro_data: Dict[str, Any], ai_commentary: str) -> str:
-        """Generate AI-powered macro economic commentary"""
-        cpi = macro_data.get('japan_cpi', 106.5)
-        gdp = macro_data.get('japan_gdp', 4231.14)
-        
-        macro_section = f"""<speak>
-Moving to Japan's macroeconomic indicators.
-<break time="500ms"/>
-The Consumer Price Index stands at {self._format_number(cpi, 1)}, 
-and Japan's GDP is approximately {self._format_number(gdp, 0)} billion dollars.
-<break time="500ms"/>
-{ai_commentary}
-<break time="700ms"/>
-</speak>"""
-        return macro_section
-    
-    def _generate_news_section(self, all_data: Dict[str, Any], ai_commentary: str) -> str:
-        """Generate AI-powered news summary section"""        
-        news_section = f"""<speak>
-Now for today's market news and analysis.
-<break time="500ms"/>
-{ai_commentary}
-<break time="700ms"/>
-</speak>"""
-        return news_section
-    
-    def _generate_sentiment_section(self, sentiment_score: int, ai_outlook: str) -> str:
-        """Generate AI-powered sentiment analysis and outlook"""        
-        sentiment_section = f"""<speak>
-Our proprietary YenSense sentiment indicator stands at {sentiment_score} out of 100.
-<break time="500ms"/>
-{ai_outlook}
-<break time="700ms"/>
-</speak>"""
-        return sentiment_section
-    
-    def _generate_closing(self) -> str:
-        """Generate closing remarks"""
-        closing = """<speak>
-That concludes today's YenSense AI morning brief.
-<break time="500ms"/>
-Remember, this analysis is for informational purposes only and not financial advice.
-<break time="500ms"/>
-For detailed analysis and interactive charts, 
-visit our weekly strategist report on YenSense AI's website.
-<break time="700ms"/>
-Have a productive trading day, and we'll see you tomorrow.
-<break time="500ms"/>
-Sources for today's data include: 
-FRED Economic Data, Alpha Vantage, Bank of Japan, Reuters, and Nikkei Asia.
-</speak>"""
-        return closing
-    
-    def generate_script(self, data: Dict[str, Any]) -> str:
-        """Generate complete morning brief script with AI analysis"""
-        self.logger.info("Generating AI-powered morning brief script")
-        
-        # Get AI-powered commentary
-        ai_commentary = self.ai_analyst.generate_morning_commentary(data)
-        
-        # Build script sections with AI insights
-        script_parts = [
-            self._generate_greeting(),
-            self._generate_fx_section(data.get('fx_rates', {}), ai_commentary['fx_commentary']),
-            self._generate_macro_section(data.get('macro_data', {}), ai_commentary['macro_commentary']),
-            self._generate_news_section(data, ai_commentary['news_commentary']),
-            self._generate_sentiment_section(data.get('sentiment_score', 50), ai_commentary['market_outlook']),
-            self._generate_closing()
-        ]
-        
-        # Combine all parts
-        full_script = "\n".join(script_parts)
-        
-        # Also create plain text version (without SSML tags)
-        plain_script = full_script
-        for tag in ['<speak>', '</speak>', '<break time="500ms"/>', '<break time="700ms"/>']:
-            plain_script = plain_script.replace(tag, '')
-        plain_script = ' '.join(plain_script.split())  # Clean up whitespace
-        
-        # Calculate reading time
-        word_count = len(plain_script.split())
-        wpm = self.config['output']['morning_brief']['target_wpm']
-        duration_minutes = word_count / wpm
-        
-        self.logger.info(f"Script generated: {word_count} words, ~{duration_minutes:.1f} minutes")
-        
-        return full_script
-    
-    def generate_tts(self, script: str, output_filename: str) -> str:
-        """Generate TTS audio file from script"""
-        self.logger.info(f"Generating TTS audio: {output_filename}")
-        
-        # Remove SSML tags for gTTS (it doesn't support SSML)
-        plain_text = script
-        for tag in ['<speak>', '</speak>', '<break time="500ms"/>', '<break time="700ms"/>']:
-            plain_text = plain_text.replace(tag, ' ')
-        plain_text = ' '.join(plain_text.split())
-        
-        # Generate TTS
+        # Generate each domain segment
         try:
-            tts = gTTS(text=plain_text, lang='en', slow=False)
-            audio_path = os.path.join(self.output_dir, output_filename)
-            tts.save(audio_path)
-            self.logger.info(f"TTS audio saved: {audio_path}")
-            return audio_path
+            segments['rates'] = self.ai_analyst.generate_rates_commentary(data)
+            self.logger.info("Generated rates commentary")
         except Exception as e:
-            self.logger.error(f"Error generating TTS: {e}")
+            self.logger.error(f"Failed to generate rates commentary: {e}")
+            segments['rates'] = "Rates markets were quiet overnight with limited activity."
+        
+        try:
+            segments['fx'] = self.ai_analyst.generate_fx_commentary(data)
+            self.logger.info("Generated FX commentary")
+        except Exception as e:
+            self.logger.error(f"Failed to generate FX commentary: {e}")
+            segments['fx'] = "Yen crosses were range-bound with limited volatility overnight."
+        
+        try:
+            segments['repo'] = self.ai_analyst.generate_repo_commentary(data)
+            self.logger.info("Generated repo commentary")
+        except Exception as e:
+            self.logger.error(f"Failed to generate repo commentary: {e}")
+            segments['repo'] = "Repo markets were stable with no funding stress."
+        
+        try:
+            segments['economist'] = self.ai_analyst.generate_economist_commentary(data)
+            self.logger.info("Generated economist commentary")
+        except Exception as e:
+            self.logger.error(f"Failed to generate economist commentary: {e}")
+            segments['economist'] = "Economic data releases were in line with expectations."
+        
+        return segments
+    
+    def generate_multi_voice_audio(self, segments: Dict[str, str], output_filename: str) -> str:
+        """Generate audio with different voices for each segment"""
+        self.logger.info(f"Generating multi-voice audio: {output_filename}")
+        
+        if not HAS_PYDUB:
+            self.logger.warning("pydub not available, falling back to single voice audio")
+            return self._generate_fallback_audio(segments, output_filename)
+        
+        # Voice assignments for each domain
+        voice_config = {
+            'rates': {'tld': 'com'},      # US English
+            'fx': {'tld': 'co.uk'},       # UK English  
+            'repo': {'tld': 'ca'},        # Canadian English
+            'economist': {'tld': 'com.au'} # Australian English
+        }
+        
+        audio_segments = []
+        
+        try:
+            # Generate intro
+            intro_text = f"Good morning. This is your YenSense AI market brief for {datetime.now().strftime('%A, %B %d')}."
+            intro_tts = gTTS(text=intro_text, lang='en', tld='com')
+            intro_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+            intro_tts.save(intro_file.name)
+            audio_segments.append(AudioSegment.from_mp3(intro_file.name))
+            
+            # Add brief pause
+            silence = AudioSegment.silent(duration=500)  # 500ms
+            
+            # Generate each domain segment with different voice
+            for domain, text in segments.items():
+                if not text.strip():
+                    continue
+                    
+                # Clean text for TTS
+                clean_text = text.strip()
+                
+                # Generate TTS with domain-specific voice
+                voice_settings = voice_config.get(domain, {'tld': 'com'})
+                tts = gTTS(text=clean_text, lang='en', tld=voice_settings['tld'])
+                
+                # Save to temporary file
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+                tts.save(temp_file.name)
+                
+                # Load and add to segments
+                segment_audio = AudioSegment.from_mp3(temp_file.name)
+                audio_segments.append(silence)  # Pause between segments
+                audio_segments.append(segment_audio)
+                
+                self.logger.info(f"Generated {domain} segment with {voice_settings['tld']} voice")
+            
+            # Add outro
+            outro_text = "That's your morning brief. Sources include FRED, Alpha Vantage, Bank of Japan, and Reuters. This is for informational purposes only."
+            outro_tts = gTTS(text=outro_text, lang='en', tld='com')
+            outro_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+            outro_tts.save(outro_file.name)
+            audio_segments.append(silence)
+            audio_segments.append(AudioSegment.from_mp3(outro_file.name))
+            
+            # Combine all segments
+            final_audio = sum(audio_segments)
+            
+            # Save final audio
+            output_path = os.path.join(self.output_dir, output_filename)
+            final_audio.export(output_path, format="mp3")
+            
+            self.logger.info(f"Multi-voice audio saved: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            self.logger.error(f"Error generating multi-voice audio: {e}")
+            # Fallback to single voice
+            return self._generate_fallback_audio(segments, output_filename)
+    
+    def _generate_fallback_audio(self, segments: Dict[str, str], output_filename: str) -> str:
+        """Generate single-voice audio as fallback"""
+        self.logger.info("Generating fallback single-voice audio")
+        
+        # Combine all segments into single text
+        combined_text = f"Good morning. This is your YenSense AI market brief. "
+        
+        for domain, text in segments.items():
+            if text.strip():
+                combined_text += f"{text} "
+        
+        combined_text += "That's your morning brief. This is for informational purposes only."
+        
+        try:
+            tts = gTTS(text=combined_text, lang='en', slow=False)
+            output_path = os.path.join(self.output_dir, output_filename)
+            tts.save(output_path)
+            self.logger.info(f"Fallback audio saved: {output_path}")
+            return output_path
+        except Exception as e:
+            self.logger.error(f"Error generating fallback audio: {e}")
             return ""
     
-    def save_script(self, script: str, data: Dict[str, Any]) -> Dict[str, str]:
-        """Save script and generate audio"""
+    def save_brief(self, segments: Dict[str, str], data: Dict[str, Any]) -> Dict[str, str]:
+        """Save brief segments and generate multi-voice audio"""
         date_str = datetime.now().strftime("%Y%m%d")
         
-        # Save text script
+        # Save text script with segments
         text_filename = f"morning_brief_{date_str}.txt"
         text_path = os.path.join(self.output_dir, text_filename)
         
         with open(text_path, 'w') as f:
-            f.write(script)
-            f.write("\n\n---\n")
+            f.write(f"YenSense AI Morning Brief - {datetime.now().strftime('%A, %B %d, %Y')}\n")
+            f.write("="*60 + "\n\n")
+            
+            # Write each segment
+            segment_titles = {
+                'rates': 'RATES MARKETS',
+                'fx': 'FOREIGN EXCHANGE', 
+                'repo': 'REPO MARKETS',
+                'economist': 'ECONOMIC OUTLOOK'
+            }
+            
+            for domain in ['rates', 'fx', 'repo', 'economist']:
+                if domain in segments and segments[domain].strip():
+                    f.write(f"## {segment_titles[domain]}\n")
+                    f.write(f"{segments[domain]}\n\n")
+            
+            f.write("---\n")
             f.write(f"Generated: {datetime.now().isoformat()}\n")
             f.write(f"Sentiment Score: {data.get('sentiment_score', 50)}/100\n")
             f.write("Data Sources: FRED, Alpha Vantage, BOJ, Reuters, Nikkei Asia\n")
             f.write("Disclaimer: This content is for informational purposes only and not financial advice.\n")
         
-        self.logger.info(f"Script saved: {text_path}")
+        self.logger.info(f"Brief text saved: {text_path}")
         
-        # Generate audio
+        # Generate multi-voice audio
         audio_filename = f"morning_brief_{date_str}.mp3"
-        audio_path = self.generate_tts(script, audio_filename)
+        audio_path = self.generate_multi_voice_audio(segments, audio_filename)
         
         return {
             'text_file': text_path,
             'audio_file': audio_path,
-            'date': date_str
+            'date': date_str,
+            'segments': list(segments.keys())
         }
 
 
 if __name__ == "__main__":
-    # Test the morning brief generator
+    # Test the morning brief generator    
     logging.basicConfig(level=logging.INFO)
     
     # Sample data for testing
@@ -219,6 +244,6 @@ if __name__ == "__main__":
     }
     
     generator = MorningBriefGenerator()
-    script = generator.generate_script(test_data)
-    result = generator.save_script(script, test_data)
+    segments = generator.generate_segments(test_data)
+    result = generator.save_brief(segments, test_data)
     print(f"Generated files: {result}")

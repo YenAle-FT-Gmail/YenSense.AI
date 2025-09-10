@@ -96,13 +96,13 @@ class YenSenseAI:
             self.logger.info("Fetching latest market data...")
             data = self.data_fetcher.fetch_all_data()
             
-            # Generate morning brief
-            self.logger.info("Generating morning brief script...")
-            script = self.morning_brief.generate_script(data)
+            # Generate morning brief segments
+            self.logger.info("Generating domain-specific segments...")
+            segments = self.morning_brief.generate_segments(data)
             
-            # Save script and generate audio
-            self.logger.info("Saving script and generating audio...")
-            result = self.morning_brief.save_script(script, data)
+            # Save brief and generate multi-voice audio
+            self.logger.info("Saving brief and generating multi-voice audio...")
+            result = self.morning_brief.save_brief(segments, data)
             
             self.logger.info(f"Morning brief completed successfully!")
             self.logger.info(f"Text file: {result['text_file']}")

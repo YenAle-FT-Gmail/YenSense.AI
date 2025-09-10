@@ -4,6 +4,7 @@ beautifulsoup4>=4.13.0
 pandas>=2.3.0
 plotly>=6.3.0
 gTTS>=2.5.0
+pydub>=0.25.0
 ghp-import>=2.1.0
 schedule>=1.2.0
 PyYAML>=6.0.0

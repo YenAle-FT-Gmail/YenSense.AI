@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from .base_stage import BaseStage
 from ..context import PipelineContext
-from core.ai_analyst import AIAnalyst
+from core.ai_analyst_report import AIAnalystReport
 
 
 class ValidationStage(BaseStage):
@@ -19,7 +19,7 @@ class ValidationStage(BaseStage):
     def __init__(self, config_path: str = "config.yaml"):
         """Initialize with AI analyst"""
         super().__init__(config_path)
-        self.ai_analyst = AIAnalyst(config_path)
+        self.ai_analyst = AIAnalystReport(config_path)
     
     def execute(self, context: PipelineContext) -> PipelineContext:
         """

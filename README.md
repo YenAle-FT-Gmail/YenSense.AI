@@ -19,7 +19,7 @@ This approach produces evidence-based analysis where AI questions its assumption
 
 ## Features
 
-- **Daily Morning Brief**: 2-3 minute TTS-ready script with SSML markup, AI-generated market commentary
+- **Daily Morning Brief**: Domain-specific podcast with multi-voice TTS covering rates, FX, repo, and economic outlook
 - **Weekly Strategist Report**: Comprehensive HTML report with interactive Plotly charts, multi-stage AI analysis
 - **Real-time Data Integration**: FRED, Alpha Vantage, BOJ, Reuters, Nikkei
 - **AI-Powered Analysis**: OpenAI GPT-5-mini for intelligent market insights
@@ -117,7 +117,9 @@ Press `Ctrl+C` to stop the scheduler.
 YenSense.AI/
 ├── src/                          # All source code
 │   ├── core/                     # Core business logic
-│   │   ├── ai_analyst.py        # OpenAI GPT-5-mini integration
+│   │   ├── ai_analyst_base.py   # Shared OpenAI utilities
+│   │   ├── ai_analyst_brief.py  # Morning brief AI generation
+│   │   ├── ai_analyst_report.py # Weekly report AI generation
 │   │   └── data_fetcher.py      # Data source integrations
 │   ├── generators/               # Report generators
 │   │   ├── morning_brief.py     # Daily brief generator
@@ -235,6 +237,7 @@ python -c "from src.pipeline.orchestrator import AnalysisPipeline; p = AnalysisP
 
 ### OpenAI API Errors
 - Ensure OpenAI API key is set in config.yaml
+- **CRITICAL**: Model must be `gpt-5-mini` - DO NOT CHANGE this model name
 - GPT-5-mini requires `max_completion_tokens` (not `max_tokens`)
 - GPT-5-mini doesn't support custom temperature settings
 
