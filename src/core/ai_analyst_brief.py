@@ -31,13 +31,13 @@ class AIAnalystBrief(AIAnalystBase):
         """Generate rates market commentary for morning brief"""
         
         # Extract relevant data
-        macro_data = data.get('macro_data', {})
-        fx_data = data.get('fx_rates', {})
+        yields_data = data.get('yields', {})
+        fx_data = data.get('fx', {})
         headlines = self._extract_headlines(data, limit=3)
         
         # Get JGB and US Treasury data if available
-        jgb_10y = macro_data.get('jgb_10y', 0.25)  # Placeholder
-        us_10y = macro_data.get('us_10y', 4.25)   # Placeholder
+        jgb_10y = yields_data.get('jgb_10y', 1.56)  # Live data
+        us_10y = yields_data.get('ust_10y', 4.05)   # Live data
         
         headline_text = "\n".join([f"- {h['title']} ({h['source']})" for h in headlines]) if headlines else "No major rate-related headlines"
         
@@ -62,12 +62,12 @@ If rates were quiet, just say "JGB yields were little changed overnight, trading
 Be specific about moves, levels, and catalysts. No fluff.
 """
         
-        return self._call_openai(prompt, max_tokens=500, system_prompt=self.brief_system_prompt)
+        return self._call_openai(prompt, max_completion_tokens=800, system_prompt=self.brief_system_prompt)
     
     def generate_fx_commentary(self, data: Dict[str, Any]) -> str:
         """Generate FX market commentary covering all JPY crosses"""
         
-        fx_data = data.get('fx_rates', {})
+        fx_data = data.get('fx', {})
         headlines = self._extract_headlines(data, limit=3)
         
         # Extract FX levels
@@ -102,27 +102,36 @@ Connect the dots. Show relationships. If FX was quiet, just say "Yen crosses wer
 Don't give equal time to each pair - focus on what actually moved and why.
 """
         
-        return self._call_openai(prompt, max_tokens=600, system_prompt=self.brief_system_prompt)
+        return self._call_openai(prompt, max_completion_tokens=800, system_prompt=self.brief_system_prompt)
     
     def generate_repo_commentary(self, data: Dict[str, Any]) -> str:
         """Generate repo market commentary"""
         
-        repo_data = data.get('repo_data', {})
+        repo_data = data.get('repo', {})
         headlines = self._extract_headlines(data, limit=2)
         
-        # Extract repo data (placeholders for now)
-        gc_repo = repo_data.get('gc_repo_rate', 0.15)
-        repo_spread = repo_data.get('repo_ois_spread', 5)  # basis points
-        specials = repo_data.get('specials', [])
+        # Extract actual repo data
+        gc_on = repo_data.get('gc_on', 0.489)
+        gc_1w = repo_data.get('gc_1w', 0.495) 
+        gc_1m = repo_data.get('gc_1m', 0.510)
+        tona = repo_data.get('tona', 0.477)
+        tona_high = repo_data.get('tona_high', 0.480)
+        tona_low = repo_data.get('tona_low', 0.471)
+        
+        # Calculate spreads
+        tona_range = tona_high - tona_low
+        repo_spread = (gc_on - tona) * 100  # basis points
         
         headline_text = "\n".join([f"- {h['title']}" for h in headlines]) if headlines else "No repo-specific headlines"
         
         prompt = f"""Generate podcast commentary about Japan repo markets and funding conditions.
 
 Current conditions:
-- GC repo rate: {self._format_number(gc_repo, 2)}%
-- Repo-OIS spread: {repo_spread}bp
-- Special issues: {len(specials)} JGBs trading special
+- GC O/N repo rate: {self._format_number(gc_on, 3)}%
+- GC 1W: {self._format_number(gc_1w, 3)}%
+- GC 1M: {self._format_number(gc_1m, 3)}%
+- TONA rate: {self._format_number(tona, 3)}% (range: {self._format_number(tona_low, 3)}%-{self._format_number(tona_high, 3)}%)
+- GC-TONA spread: {self._format_number(repo_spread, 1)}bp
 
 Recent news:
 {headline_text}
@@ -139,17 +148,24 @@ If repo markets are calm and functioning normally, just say "Repo markets were s
 Only elaborate if there's actual news or stress. Don't manufacture analysis.
 """
         
-        return self._call_openai(prompt, max_tokens=400, system_prompt=self.brief_system_prompt)
+        return self._call_openai(prompt, max_completion_tokens=800, system_prompt=self.brief_system_prompt)
     
     def generate_economist_commentary(self, data: Dict[str, Any]) -> str:
         """Generate macro/economic commentary and outlook"""
         
-        macro_data = data.get('macro_data', {})
+        macro_data = data.get('macro', {})
+        yield_data = data.get('yields', {})
+        fx_data = data.get('fx', {})
         headlines = self._extract_headlines(data, limit=4)
         
         # Extract economic indicators
         cpi = macro_data.get('japan_cpi', 106.5)
-        gdp = macro_data.get('japan_gdp', 4231.14)
+        gdp_trillions = macro_data.get('japan_gdp', 562987.8) / 1000  # Convert to trillions
+        us_gdp = macro_data.get('us_gdp', 30353.902)
+        
+        # Key market levels for policy context
+        jgb_10y = yield_data.get('jgb_10y', 0.25)
+        usd_jpy = fx_data.get('usdjpy', 147.25)
         
         headline_text = "\n".join([f"- {h['title']} ({h['source']})" for h in headlines]) if headlines else "No major economic headlines"
         
@@ -157,7 +173,10 @@ Only elaborate if there's actual news or stress. Don't manufacture analysis.
 
 Current indicators:
 - Japan CPI: {self._format_number(cpi, 1)}
-- Japan GDP: ¥{self._format_number(gdp, 0)} trillion
+- Japan GDP: ¥{self._format_number(gdp_trillions, 0)} trillion
+- US GDP: ${self._format_number(us_gdp, 0)} trillion
+- JGB 10Y yield: {self._format_number(jgb_10y, 2)}%
+- USD/JPY: {self._format_number(usd_jpy, 2)}
 
 Recent economic news:
 {headline_text}
@@ -176,4 +195,4 @@ If no major economic news, focus on "what's next" - upcoming releases, BOJ meeti
 Be specific about dates, levels, and policy implications. Connect macro to markets.
 """
         
-        return self._call_openai(prompt, max_tokens=600, system_prompt=self.brief_system_prompt)
+        return self._call_openai(prompt, max_completion_tokens=800, system_prompt=self.brief_system_prompt)

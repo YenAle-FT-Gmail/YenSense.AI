@@ -28,7 +28,7 @@ class AIAnalystBase:
         else:
             self.use_ai = True
     
-    def _call_openai(self, prompt: str, max_tokens: int = 1000, system_prompt: str = "") -> str:
+    def _call_openai(self, prompt: str, max_completion_tokens: int = 1000, system_prompt: str = "") -> str:
         """Call OpenAI API for analysis"""
         if not self.use_ai:
             return self._fallback_analysis()
@@ -46,7 +46,7 @@ class AIAnalystBase:
             accessible to both institutional and retail clients.'''
         
         data = {
-            'model': 'gpt-5-mini',
+            'model': 'gpt-4o-mini',
             'messages': [
                 {
                     'role': 'system',
@@ -57,7 +57,7 @@ class AIAnalystBase:
                     'content': prompt
                 }
             ],
-            'max_completion_tokens': max_tokens  # GPT-5-mini uses max_completion_tokens
+            'max_completion_tokens': max_completion_tokens
         }
         
         try:

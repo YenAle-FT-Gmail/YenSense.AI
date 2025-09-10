@@ -94,7 +94,7 @@ class YenSenseAI:
         try:
             # Fetch latest data
             self.logger.info("Fetching latest market data...")
-            data = self.data_fetcher.fetch_all_data()
+            data = self.data_fetcher.fetch_morning_brief_data()
             
             # Generate morning brief segments
             self.logger.info("Generating domain-specific segments...")

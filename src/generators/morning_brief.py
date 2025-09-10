@@ -59,7 +59,9 @@ class MorningBriefGenerator:
         # Generate each domain segment
         try:
             segments['rates'] = self.ai_analyst.generate_rates_commentary(data)
-            self.logger.info("Generated rates commentary")
+            self.logger.info(f"Generated rates commentary: {len(segments['rates'])} chars: {segments['rates'][:100]}...")
+            if not segments['rates'].strip():
+                self.logger.warning("Rates commentary is empty!")
         except Exception as e:
             self.logger.error(f"Failed to generate rates commentary: {e}")
             segments['rates'] = "Rates markets were quiet overnight with limited activity."

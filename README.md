@@ -21,7 +21,11 @@ This approach produces evidence-based analysis where AI questions its assumption
 
 - **Daily Morning Brief**: Domain-specific podcast with multi-voice TTS covering rates, FX, repo, and economic outlook
 - **Weekly Strategist Report**: Comprehensive HTML report with interactive Plotly charts, multi-stage AI analysis
-- **Real-time Data Integration**: FRED, Alpha Vantage, BOJ, Reuters, Nikkei
+- **Real-time Data Integration**: 
+  - **FRED**: US Treasury curve, FX rates, macro data (authoritative source for US rates)
+  - **JBOND**: Complete JGB yield curve 3M-40Y (authoritative source for JGB rates)  
+  - **Tokyo Tanshi**: Repo rates, TONA, funding conditions
+  - **BOJ/Reuters/Nikkei**: Policy updates and market news
 - **AI-Powered Analysis**: OpenAI GPT-5-mini for intelligent market insights
 - **Sentiment Analysis**: Dynamic sentiment scoring based on multiple factors
 - **Automated Scheduling**: Configurable daily and weekly report generation
