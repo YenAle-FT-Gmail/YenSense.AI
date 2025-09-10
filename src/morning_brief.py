@@ -11,7 +11,7 @@ from typing import Dict, Any
 
 import yaml
 from gtts import gTTS
-from .ai_analyst import AIAnalyst
+from ai_analyst import AIAnalyst
 
 
 class MorningBriefGenerator:
@@ -23,7 +23,7 @@ class MorningBriefGenerator:
             self.config = yaml.safe_load(f)
         
         self.logger = logging.getLogger(__name__)
-        self.output_dir = "macro/output/script"
+        self.output_dir = "data/output/briefs"
         os.makedirs(self.output_dir, exist_ok=True)
         
         # Initialize AI analyst

@@ -34,9 +34,11 @@ class DataFetcher:
         
         # Set up cache directories
         self.cache_dirs = {
-            'fx': 'fx/input',
-            'macro': 'macro/input',
-            'economist': 'economist/input'
+            'fx': 'data/input/fx',
+            'macro': 'data/input/macro',
+            'economist': 'data/input/economist',
+            'news': 'data/input/news',
+            'repo': 'data/input/repo'
         }
         for dir_path in self.cache_dirs.values():
             os.makedirs(dir_path, exist_ok=True)
@@ -59,7 +61,7 @@ class DataFetcher:
     
     def _get_cache_path(self, cache_type: str, filename: str) -> str:
         """Get full cache file path"""
-        return os.path.join(self.cache_dirs.get(cache_type, 'macro/input'), filename)
+        return os.path.join(self.cache_dirs.get(cache_type, 'data/input/macro'), filename)
     
     def _is_cache_valid(self, filepath: str, hours: Optional[int] = None) -> bool:
         """Check if cached data is still valid"""
@@ -294,7 +296,7 @@ class DataFetcher:
         cache_file = 'reuters_news.json'
         
         # Try cache first
-        cached = self._load_cache('macro', cache_file)
+        cached = self._load_cache('news', cache_file)
         if cached:
             self.logger.info("Using cached Reuters news")
             return cached
@@ -337,7 +339,7 @@ class DataFetcher:
             }]
         
         self.logger.info(f"Fetched {len(news)} Reuters news items")
-        self._save_cache(news, 'macro', cache_file)
+        self._save_cache(news, 'news', cache_file)
         return news
     
     def fetch_nikkei_news(self) -> List[Dict[str, str]]:

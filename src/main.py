@@ -146,7 +146,7 @@ class YenSenseAI:
             timestamp = datetime.now().strftime("%Y%m%d")
             
             # Save markdown report
-            md_file = f"economist/output/script/report_{timestamp}.md"
+            md_file = f"data/output/reports/report_{timestamp}.md"
             os.makedirs(os.path.dirname(md_file), exist_ok=True)
             with open(md_file, 'w') as f:
                 f.write(context.final_report)
@@ -159,7 +159,7 @@ class YenSenseAI:
                 context.raw_data
             )
             
-            html_file = f"economist/output/script/report_{timestamp}.html"
+            html_file = f"data/output/reports/report_{timestamp}.html"
             with open(html_file, 'w') as f:
                 f.write(html_report)
             self.logger.info(f"Saved HTML report: {html_file}")
@@ -384,7 +384,7 @@ def main():
         print("  python main.py --schedule   # Start scheduler")
         print("\nFor first-time setup:")
         print("  1. Install dependencies: pip install -r requirements.txt")
-        print("  2. Configure API keys in repo/input/config.yaml")
+        print("  2. Configure API keys in config.yaml")
         print("  3. Run: python main.py --morning")
 
 

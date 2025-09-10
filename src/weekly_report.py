@@ -14,7 +14,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.offline as pyo
 import yaml
-from .ai_analyst import AIAnalyst
+from ai_analyst import AIAnalyst
 
 
 class WeeklyReportGenerator:
@@ -26,7 +26,7 @@ class WeeklyReportGenerator:
             self.config = yaml.safe_load(f)
         
         self.logger = logging.getLogger(__name__)
-        self.output_dir = "economist/output/script"
+        self.output_dir = "data/output/reports"
         os.makedirs(self.output_dir, exist_ok=True)
         
         # Initialize AI analyst

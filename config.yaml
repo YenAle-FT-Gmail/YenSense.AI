@@ -62,6 +62,6 @@ github_pages:
 # Logging
 logging:
   level: "INFO"
-  file: "yensense.log"
+  file: "logs/system.log"
   max_size_mb: 10
   backup_count: 5
