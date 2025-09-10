@@ -71,7 +71,7 @@ api_keys:
   finnhub: "YOUR_KEY_HERE"        # Optional - Get from https://finnhub.io/register
 ```
 
-**Important**: OpenAI API key is required for the AI analysis pipeline. The system uses GPT-5-mini for cost-effective, efficient analysis.
+**Important**: OpenAI API key is required for the AI analysis pipeline. The system uses GPT-4o-mini for reliable, cost-effective analysis.
 
 ### Usage
 
