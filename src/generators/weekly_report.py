@@ -14,7 +14,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.offline as pyo
 import yaml
-from ai_analyst import AIAnalyst
+from core.ai_analyst import AIAnalyst
 
 
 class WeeklyReportGenerator:

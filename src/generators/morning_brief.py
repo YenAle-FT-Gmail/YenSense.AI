@@ -11,7 +11,7 @@ from typing import Dict, Any
 
 import yaml
 from gtts import gTTS
-from ai_analyst import AIAnalyst
+from core.ai_analyst import AIAnalyst
 
 
 class MorningBriefGenerator:

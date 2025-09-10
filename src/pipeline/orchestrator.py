@@ -10,7 +10,6 @@ from datetime import datetime
 
 from .context import PipelineContext
 from .stages import (
-    DataCollectionStage,
     InitialSummaryStage,
     EvidenceGatheringStage,
     GapIdentificationStage,
@@ -19,6 +18,7 @@ from .stages import (
     ValidationStage,
     ReportGenerationStage
 )
+from core.data_fetcher import DataFetcher
 
 
 class AnalysisPipeline:
@@ -29,9 +29,11 @@ class AnalysisPipeline:
         self.config_path = config_path
         self.logger = logging.getLogger(__name__)
         
-        # Initialize all stages
+        # Initialize data fetcher (stage 1)
+        self.data_fetcher = DataFetcher(config_path)
+        
+        # Initialize analysis stages (stages 2-8)
         self.stages = [
-            DataCollectionStage(config_path),
             InitialSummaryStage(config_path),
             EvidenceGatheringStage(config_path),
             GapIdentificationStage(config_path),
@@ -61,11 +63,21 @@ class AnalysisPipeline:
         # Initialize context
         context = PipelineContext()
         
-        # Execute each stage sequentially
-        for i, stage in enumerate(self.stages, 1):
+        # Stage 1: Data Collection (using DataFetcher directly)
+        self.logger.info(f"\n--- Stage 1/{len(self.stages)+1}: Data Collection ---")
+        try:
+            context.raw_data = self.data_fetcher.fetch_all_data()
+            self.logger.info(f"Collected data from {len(context.raw_data)} sources")
+        except Exception as e:
+            self.logger.error(f"Critical error in Data Collection: {e}")
+            context.add_error(f"Data collection failed: {str(e)}")
+            return context
+        
+        # Execute analysis stages sequentially (stages 2-8)
+        for i, stage in enumerate(self.stages, 2):
             stage_name = stage.__class__.__name__
             
-            self.logger.info(f"\n--- Stage {i}/{len(self.stages)}: {stage_name} ---")
+            self.logger.info(f"\n--- Stage {i}/{len(self.stages)+1}: {stage_name} ---")
             
             try:
                 # Execute stage
@@ -132,7 +144,7 @@ class AnalysisPipeline:
             True if pipeline should abort
         """
         # Check for critical data missing
-        if stage_name == "DataCollectionStage" and not context.raw_data:
+        if not context.raw_data:
             return True
         
         # Check for validation failure

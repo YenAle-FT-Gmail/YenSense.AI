@@ -116,14 +116,16 @@ Press `Ctrl+C` to stop the scheduler.
 ```
 YenSense.AI/
 ├── src/                          # All source code
+│   ├── core/                     # Core business logic
+│   │   ├── ai_analyst.py        # OpenAI GPT-5-mini integration
+│   │   └── data_fetcher.py      # Data source integrations
+│   ├── generators/               # Report generators
+│   │   ├── morning_brief.py     # Daily brief generator
+│   │   └── weekly_report.py     # Weekly report generator
 │   ├── pipeline/                 # 8-stage AI analysis pipeline
 │   │   ├── orchestrator.py      # Pipeline controller
 │   │   ├── context.py           # Context passing between stages
 │   │   └── stages/              # Individual stage implementations
-│   ├── ai_analyst.py            # OpenAI GPT-5-mini integration
-│   ├── data_fetcher.py          # Data source integrations
-│   ├── morning_brief.py         # Daily brief generator
-│   ├── weekly_report.py         # Weekly report generator
 │   └── main.py                  # Main orchestration
 ├── tests/                        # Test suite
 ├── docs/                         # GitHub Pages web interface
@@ -175,12 +177,12 @@ YenSense.AI/
 
 ### Modify Report Content
 Edit the generator modules in `src/`:
-- `src/morning_brief.py` - Customize morning brief sections
-- `src/weekly_report.py` - Modify report structure and charts
+- `src/generators/morning_brief.py` - Customize morning brief sections
+- `src/generators/weekly_report.py` - Modify report structure and charts
 - `src/pipeline/stages/` - Customize individual pipeline stages
 
 ### Add New Data Sources
-1. Update `src/data_fetcher.py` with new fetch methods
+1. Update `src/core/data_fetcher.py` with new fetch methods
 2. Add configuration in `config.yaml`
 3. Integrate into pipeline stages or report generators
 

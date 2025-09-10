@@ -20,9 +20,9 @@ import yaml
 # Add script directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from data_fetcher import DataFetcher
-from morning_brief import MorningBriefGenerator
-from weekly_report import WeeklyReportGenerator
+from core.data_fetcher import DataFetcher
+from generators.morning_brief import MorningBriefGenerator
+from generators.weekly_report import WeeklyReportGenerator
 from pipeline.orchestrator import AnalysisPipeline
 
 

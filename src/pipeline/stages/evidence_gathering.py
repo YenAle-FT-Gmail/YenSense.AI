@@ -10,8 +10,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from .base_stage import BaseStage
 from ..context import PipelineContext
-from ai_analyst import AIAnalyst
-from data_fetcher import DataFetcher
+from core.ai_analyst import AIAnalyst
+from core.data_fetcher import DataFetcher
 
 
 class EvidenceGatheringStage(BaseStage):
