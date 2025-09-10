@@ -11,6 +11,7 @@ from typing import Dict, Any
 
 import yaml
 from gtts import gTTS
+from .ai_analyst import AIAnalyst
 
 
 class MorningBriefGenerator:
@@ -24,6 +25,9 @@ class MorningBriefGenerator:
         self.logger = logging.getLogger(__name__)
         self.output_dir = "macro/output/script"
         os.makedirs(self.output_dir, exist_ok=True)
+        
+        # Initialize AI analyst
+        self.ai_analyst = AIAnalyst(config_path)
     
     def _format_number(self, number: float, decimals: int = 2) -> str:
         """Format number for speech"""
@@ -45,109 +49,56 @@ It's {day_name}, {date_str}, and I'm here with your Japan macro and FX update.
 </speak>"""
         return greeting
     
-    def _generate_fx_section(self, fx_data: Dict[str, float]) -> str:
-        """Generate FX market commentary"""
+    def _generate_fx_section(self, fx_data: Dict[str, float], ai_commentary: str) -> str:
+        """Generate AI-powered FX market commentary"""
         usd_jpy = fx_data.get('USD/JPY', 147.25)
         eur_jpy = fx_data.get('EUR/JPY', 158.90)
-        
-        # Determine trend language
-        usd_trend = "strengthening" if usd_jpy > 148 else "stable" if usd_jpy > 146 else "weakening"
         
         fx_section = f"""<speak>
 Let's start with the foreign exchange markets.
 <break time="500ms"/>
 Dollar-yen is currently trading at {self._format_number(usd_jpy)}, 
-showing the dollar is {usd_trend} against the yen.
+and Euro-yen is at {self._format_number(eur_jpy)}.
 <break time="500ms"/>
-For our retail listeners, this means it takes about {int(usd_jpy)} yen to buy one US dollar.
+{ai_commentary}
 <break time="700ms"/>
-Euro-yen is at {self._format_number(eur_jpy)}, 
-indicating European currency strength relative to the yen.
+For our retail listeners, this means it takes about {int(usd_jpy)} yen to buy one US dollar.
 <break time="700ms"/>
 </speak>"""
         return fx_section
     
-    def _generate_macro_section(self, macro_data: Dict[str, Any]) -> str:
-        """Generate macro economic commentary"""
+    def _generate_macro_section(self, macro_data: Dict[str, Any], ai_commentary: str) -> str:
+        """Generate AI-powered macro economic commentary"""
         cpi = macro_data.get('japan_cpi', 106.5)
         gdp = macro_data.get('japan_gdp', 4231.14)
-        
-        # CPI interpretation
-        cpi_change = "rising" if cpi > 106 else "stable" if cpi > 105 else "falling"
         
         macro_section = f"""<speak>
 Moving to Japan's macroeconomic indicators.
 <break time="500ms"/>
-The Consumer Price Index, which measures inflation by tracking price changes in everyday goods,
-stands at {self._format_number(cpi, 1)}, showing prices are {cpi_change}.
-<break time="700ms"/>
-Japan's GDP, the total value of all goods and services produced,
-is approximately {self._format_number(gdp, 0)} billion dollars.
+The Consumer Price Index stands at {self._format_number(cpi, 1)}, 
+and Japan's GDP is approximately {self._format_number(gdp, 0)} billion dollars.
 <break time="500ms"/>
-This gives us insight into the overall health of Japan's economy.
+{ai_commentary}
 <break time="700ms"/>
 </speak>"""
         return macro_section
     
-    def _generate_news_section(self, all_data: Dict[str, Any]) -> str:
-        """Generate news summary section"""
-        news_items = []
-        
-        # Collect news from all sources
-        for source in ['boj_news', 'reuters_news', 'nikkei_news']:
-            if source in all_data and all_data[source]:
-                news_items.extend(all_data[source][:1])  # Take top item from each
-        
-        if not news_items:
-            return """<speak>
-In today's news, markets remain focused on Bank of Japan policy decisions.
+    def _generate_news_section(self, all_data: Dict[str, Any], ai_commentary: str) -> str:
+        """Generate AI-powered news summary section"""        
+        news_section = f"""<speak>
+Now for today's market news and analysis.
+<break time="500ms"/>
+{ai_commentary}
 <break time="700ms"/>
 </speak>"""
-        
-        news_section = """<speak>
-Now for today's key headlines.
-<break time="500ms"/>
-"""
-        
-        for item in news_items[:3]:  # Limit to 3 items
-            title = item.get('title', 'Market Update')
-            source = item.get('source', 'News')
-            
-            # Clean title for speech
-            title = title.replace('&', 'and').replace('%', ' percent')
-            
-            news_section += f"""From {source}: {title}.
-<break time="700ms"/>
-"""
-        
-        news_section += "</speak>"
         return news_section
     
-    def _generate_sentiment_section(self, sentiment_score: int) -> str:
-        """Generate sentiment analysis section"""
-        # Interpret sentiment
-        if sentiment_score >= 70:
-            sentiment_text = "bullish"
-            explanation = "indicating positive momentum for the yen"
-        elif sentiment_score >= 55:
-            sentiment_text = "moderately positive"
-            explanation = "suggesting stable conditions with slight yen strength"
-        elif sentiment_score >= 45:
-            sentiment_text = "neutral"
-            explanation = "reflecting balanced market conditions"
-        elif sentiment_score >= 30:
-            sentiment_text = "moderately bearish"
-            explanation = "suggesting some pressure on the yen"
-        else:
-            sentiment_text = "bearish"
-            explanation = "indicating challenging conditions for the yen"
-        
+    def _generate_sentiment_section(self, sentiment_score: int, ai_outlook: str) -> str:
+        """Generate AI-powered sentiment analysis and outlook"""        
         sentiment_section = f"""<speak>
-Our proprietary YenSense sentiment indicator stands at {sentiment_score} out of 100,
-which is {sentiment_text}, {explanation}.
-<break time="700ms"/>
-This score combines foreign exchange movements, economic indicators, and policy signals
-to give you a quick read on yen market conditions.
+Our proprietary YenSense sentiment indicator stands at {sentiment_score} out of 100.
+<break time="500ms"/>
+{ai_outlook}
 <break time="700ms"/>
 </speak>"""
         return sentiment_section
@@ -170,16 +121,19 @@ FRED Economic Data, Alpha Vantage, Bank of Japan, Reuters, and Nikkei Asia.
         return closing
     
     def generate_script(self, data: Dict[str, Any]) -> str:
-        """Generate complete morning brief script"""
-        self.logger.info("Generating morning brief script")
+        """Generate complete morning brief script with AI analysis"""
+        self.logger.info("Generating AI-powered morning brief script")
         
-        # Build script sections
+        # Get AI-powered commentary
+        ai_commentary = self.ai_analyst.generate_morning_commentary(data)
+        
+        # Build script sections with AI insights
         script_parts = [
             self._generate_greeting(),
-            self._generate_fx_section(data.get('fx_rates', {})),
-            self._generate_macro_section(data.get('macro_data', {})),
-            self._generate_news_section(data),
-            self._generate_sentiment_section(data.get('sentiment_score', 50)),
+            self._generate_fx_section(data.get('fx_rates', {}), ai_commentary['fx_commentary']),
+            self._generate_macro_section(data.get('macro_data', {}), ai_commentary['macro_commentary']),
+            self._generate_news_section(data, ai_commentary['news_commentary']),
+            self._generate_sentiment_section(data.get('sentiment_score', 50), ai_commentary['market_outlook']),
             self._generate_closing()
         ]
         

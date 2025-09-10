@@ -5,6 +5,7 @@ api_keys:
   alpha_vantage: "AOBFVK6H024JABUA"
   fred: "84c8e952e951dafa44010a7ee06f0145"  # Get from https://fred.stlouisfed.org/docs/api/api_key.html
   finnhub: "d30f90hr01qnmrse9qb0d30f90hr01qnmrse9qbg"  # Get from https://finnhub.io/register
+  openai: "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"  # Get from https://platform.openai.com/api-keys
 
 # Data fetch settings
 data:
@@ -61,6 +62,6 @@ github_pages:
 # Logging
 logging:
   level: "INFO"
-  file: "repo/output/log.txt"
+  file: "yensense.log"
   max_size_mb: 10
   backup_count: 5

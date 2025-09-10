@@ -20,9 +20,9 @@ import yaml
 # Add script directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from data_fetcher import DataFetcher
-from morning_brief import MorningBriefGenerator
-from weekly_report import WeeklyReportGenerator
+from .data_fetcher import DataFetcher
+from .morning_brief import MorningBriefGenerator
+from .weekly_report import WeeklyReportGenerator
 
 
 class YenSenseAI:
@@ -52,7 +52,8 @@ class YenSenseAI:
     def setup_logging(self):
         """Setup logging configuration"""
         log_file = self.config['logging']['file']
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        if os.path.dirname(log_file):
+            os.makedirs(os.path.dirname(log_file), exist_ok=True)
         
         # Create logger
         self.logger = logging.getLogger('YenSenseAI')

@@ -14,6 +14,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.offline as pyo
 import yaml
+from .ai_analyst import AIAnalyst
 
 
 class WeeklyReportGenerator:
@@ -27,6 +28,9 @@ class WeeklyReportGenerator:
         self.logger = logging.getLogger(__name__)
         self.output_dir = "economist/output/script"
         os.makedirs(self.output_dir, exist_ok=True)
+        
+        # Initialize AI analyst
+        self.ai_analyst = AIAnalyst(config_path)
     
     def _generate_executive_summary(self, data: Dict[str, Any]) -> str:
         """Generate executive summary section"""
