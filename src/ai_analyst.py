@@ -53,8 +53,7 @@ class AIAnalyst:
                     'content': prompt
                 }
             ],
-            'max_tokens': max_tokens,
-            'temperature': 0.7
+            'max_completion_tokens': max_tokens
         }
         
         try:

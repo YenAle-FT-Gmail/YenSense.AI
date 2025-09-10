@@ -20,9 +20,10 @@ import yaml
 # Add script directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from .data_fetcher import DataFetcher
-from .morning_brief import MorningBriefGenerator
-from .weekly_report import WeeklyReportGenerator
+from data_fetcher import DataFetcher
+from morning_brief import MorningBriefGenerator
+from weekly_report import WeeklyReportGenerator
+from pipeline.orchestrator import AnalysisPipeline
 
 
 class YenSenseAI:
@@ -118,13 +119,68 @@ class YenSenseAI:
             return None
     
     def run_weekly_report(self):
-        """Execute weekly report generation"""
+        """Execute weekly report generation using new pipeline"""
         self.logger.info("=" * 50)
-        self.logger.info("Starting Weekly Strategist Report Generation")
+        self.logger.info("Starting Weekly Strategist Report Generation (Pipeline Mode)")
         self.logger.info(f"Time: {datetime.now(self.timezone).strftime('%Y-%m-%d %H:%M:%S %Z')}")
         
         try:
-            # Fetch latest data
+            # Use new multi-stage pipeline for weekly reports
+            self.logger.info("Initializing multi-stage analysis pipeline...")
+            pipeline = AnalysisPipeline(self.config_path)
+            
+            # Run the complete pipeline
+            self.logger.info("Running analysis pipeline (8 stages)...")
+            context = pipeline.run(save_context=True)
+            
+            # Check if pipeline succeeded
+            if not context.final_report:
+                self.logger.error("Pipeline failed to generate report")
+                return None
+            
+            # Use the pipeline-generated report
+            self.logger.info(f"Pipeline complete. Report title: {context.title}")
+            
+            # Save the report using existing infrastructure
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d")
+            
+            # Save markdown report
+            md_file = f"economist/output/script/report_{timestamp}.md"
+            os.makedirs(os.path.dirname(md_file), exist_ok=True)
+            with open(md_file, 'w') as f:
+                f.write(context.final_report)
+            self.logger.info(f"Saved markdown report: {md_file}")
+            
+            # Generate HTML version with charts
+            self.logger.info("Generating HTML version with charts...")
+            html_report = self.weekly_report._generate_html_wrapper(
+                context.final_report,
+                context.raw_data
+            )
+            
+            html_file = f"economist/output/script/report_{timestamp}.html"
+            with open(html_file, 'w') as f:
+                f.write(html_report)
+            self.logger.info(f"Saved HTML report: {html_file}")
+            
+            result = {
+                'markdown_file': md_file,
+                'html_file': html_file,
+                'title': context.title
+            }
+            
+            # Deploy to GitHub Pages if enabled
+            if self.config['github_pages']['enabled']:
+                self.deploy_to_github_pages(html_file, 'weekly')
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error in pipeline report generation: {e}", exc_info=True)
+            self.logger.info("Falling back to original report generation...")
+            
+            # Fallback to original method
             self.logger.info("Fetching comprehensive market data...")
             data = self.data_fetcher.fetch_all_data()
             

@@ -1,3 +1,45 @@
-venv
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Claude
 .claude
-__pycache__
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Config (contains API keys)
+config.yaml
+
+# Logs and debug files
+*.log
+logs/
+pipeline_context_*.json
+yensense.log
+
+# Cache files
+fx/input/*.json
+fx/input/*.csv
+macro/input/*.json
+economist/input/*.json
+
+# Output files (can be regenerated)
+macro/output/script/*.mp3
+
+# Test artifacts
+tests/__pycache__/
+tests/*.json
+tests/pipeline_test_report.md
