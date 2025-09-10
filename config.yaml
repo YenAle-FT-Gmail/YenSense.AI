@@ -1,0 +1,66 @@
+# YenSense AI Configuration
+# Replace with your actual API keys
+
+api_keys:
+  alpha_vantage: "AOBFVK6H024JABUA"
+  fred: "84c8e952e951dafa44010a7ee06f0145"  # Get from https://fred.stlouisfed.org/docs/api/api_key.html
+  finnhub: "d30f90hr01qnmrse9qb0d30f90hr01qnmrse9qbg"  # Get from https://finnhub.io/register
+
+# Data fetch settings
+data:
+  fx_pairs:
+    - "USD/JPY"
+    - "EUR/JPY"
+  
+  cache_expiry_hours: 24
+  retry_attempts: 3
+  retry_delay_seconds: 5
+
+# Output settings
+output:
+  morning_brief:
+    target_wpm: 150  # Words per minute for TTS
+    target_duration_seconds: 180  # 3 minutes
+  
+  weekly_report:
+    target_word_count: 800
+    chart_height: 500
+    chart_width: 900
+
+# Scraping targets
+scraping:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  timeout_seconds: 10
+  
+  targets:
+    - name: "BOJ"
+      url: "https://www.boj.or.jp/en/"
+      type: "policy"
+    
+    - name: "Reuters Japan"
+      url: "https://www.reuters.com/markets/asia/"
+      type: "news"
+    
+    - name: "Nikkei"
+      url: "https://asia.nikkei.com/Economy"
+      type: "news"
+
+# Schedule settings (JST)
+schedule:
+  daily_brief_time: "10:00"
+  weekly_report_day: "monday"
+  weekly_report_time: "10:00"
+  timezone: "Asia/Tokyo"
+
+# GitHub Pages settings
+github_pages:
+  branch: "gh-pages"
+  directory: "docs"
+  enabled: true  # Set to true when ready to deploy
+
+# Logging
+logging:
+  level: "INFO"
+  file: "repo/output/log.txt"
+  max_size_mb: 10
+  backup_count: 5
