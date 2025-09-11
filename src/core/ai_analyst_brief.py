@@ -157,6 +157,7 @@ Only elaborate if there's actual news or stress. Don't manufacture analysis.
         yield_data = data.get('yields', {})
         fx_data = data.get('fx', {})
         headlines = self._extract_headlines(data, limit=4)
+        calendar_data = data.get('calendar', {})
         
         # Extract economic indicators
         cpi = macro_data.get('japan_cpi', 106.5)
@@ -168,6 +169,17 @@ Only elaborate if there's actual news or stress. Don't manufacture analysis.
         usd_jpy = fx_data.get('usdjpy', 147.25)
         
         headline_text = "\n".join([f"- {h['title']} ({h['source']})" for h in headlines]) if headlines else "No major economic headlines"
+        
+        # Format upcoming events
+        upcoming_events = calendar_data.get('high_importance_upcoming', [])
+        events_text = ""
+        if upcoming_events:
+            event_lines = []
+            for event in upcoming_events[:5]:  # Top 5 upcoming events
+                event_lines.append(f"- {event['date']}: {event['event_name']} ({event['country']})")
+            events_text = "\n".join(event_lines)
+        else:
+            events_text = "No major events scheduled"
         
         prompt = f"""Generate podcast commentary on Japan's economic outlook and policy implications.
 
@@ -181,16 +193,19 @@ Current indicators:
 Recent economic news:
 {headline_text}
 
+Upcoming economic events:
+{events_text}
+
 Discuss:
 1. Any fresh economic data releases and what they mean for BOJ policy
 2. Inflation trends and distance from BOJ's 2% target
 3. Growth outlook and global economic connections
-4. Upcoming key data releases or BOJ meetings to watch
+4. Upcoming key data releases or BOJ meetings to watch (use the calendar above)
 5. Policy implications for markets (rates, FX)
 
-Forward-looking focus: What should traders watch this week? What data/events could change the narrative?
+Forward-looking focus: What should traders watch this week? Reference specific dates from the upcoming events calendar.
 
-If no major economic news, focus on "what's next" - upcoming releases, BOJ meetings, or policy themes.
+If no major economic news, focus on "what's next" - use the upcoming events to guide discussion of policy themes.
 
 Be specific about dates, levels, and policy implications. Connect macro to markets.
 """

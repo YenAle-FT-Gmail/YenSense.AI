@@ -1,0 +1,85 @@
+{
+  "BOJ": {
+    "2025": [
+      {"meeting_dates": "Jan 23-24", "decision_date": "2025-01-24T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Mar 18-19", "decision_date": "2025-03-19T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Apr 30-May 1", "decision_date": "2025-05-01T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Jun 16-17", "decision_date": "2025-06-17T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Jul 30-31", "decision_date": "2025-07-31T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Sep 18-19", "decision_date": "2025-09-19T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Oct 29-30", "decision_date": "2025-10-30T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Dec 18-19", "decision_date": "2025-12-19T03:00:00Z", "time_zone": "JST", "local_time": "12:00"}
+    ],
+    "2026": [
+      {"meeting_dates": "Jan 22-23", "decision_date": "2026-01-23T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Mar 18-19", "decision_date": "2026-03-19T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Apr 27-28", "decision_date": "2026-04-28T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Jun 15-16", "decision_date": "2026-06-16T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Jul 30-31", "decision_date": "2026-07-31T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Sep 17-18", "decision_date": "2026-09-18T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Oct 29-30", "decision_date": "2026-10-30T03:00:00Z", "time_zone": "JST", "local_time": "12:00"},
+      {"meeting_dates": "Dec 17-18", "decision_date": "2026-12-18T03:00:00Z", "time_zone": "JST", "local_time": "12:00"}
+    ]
+  },
+  "FOMC": {
+    "2025": [
+      {"meeting_dates": "Jan 28-29", "decision_date": "2025-01-29T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Mar 18-19", "decision_date": "2025-03-19T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "May 6-7", "decision_date": "2025-05-07T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Jun 17-18", "decision_date": "2025-06-18T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Jul 29-30", "decision_date": "2025-07-30T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Sep 16-17", "decision_date": "2025-09-17T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Oct 28-29", "decision_date": "2025-10-29T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Dec 9-10", "decision_date": "2025-12-10T19:00:00Z", "time_zone": "ET", "local_time": "14:00"}
+    ],
+    "2026": [
+      {"meeting_dates": "Jan 27-28", "decision_date": "2026-01-28T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Mar 17-18", "decision_date": "2026-03-18T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Apr 28-29", "decision_date": "2026-04-29T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Jun 16-17", "decision_date": "2026-06-17T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Jul 28-29", "decision_date": "2026-07-29T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Sep 15-16", "decision_date": "2026-09-16T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Oct 27-28", "decision_date": "2026-10-28T19:00:00Z", "time_zone": "ET", "local_time": "14:00"},
+      {"meeting_dates": "Dec 8-9", "decision_date": "2026-12-09T19:00:00Z", "time_zone": "ET", "local_time": "14:00"}
+    ]
+  },
+  "ECB": {
+    "2025": [
+      {"decision_date": "2025-01-30T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-03-06T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-04-17T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-06-05T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-07-24T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-09-11T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-10-30T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2025-12-18T12:45:00Z", "time_zone": "CET", "local_time": "13:45"}
+    ],
+    "2026": [
+      {"decision_date": "2026-02-05T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2026-03-19T12:45:00Z", "time_zone": "CET", "local_time": "13:45"},
+      {"decision_date": "2026-04-30T12:45:00Z", "time_zone": "CET", "local_time": "13:45"}
+    ]
+  },
+  "BOE": {
+    "2025": [
+      {"decision_date": "2025-02-06T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-03-20T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-05-08T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-06-19T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-08-07T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-09-18T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-11-06T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2025-12-18T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"}
+    ],
+    "2026": [
+      {"decision_date": "2026-02-05T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-03-19T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-04-30T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-06-18T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-07-30T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-09-17T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-11-05T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"},
+      {"decision_date": "2026-12-17T12:00:00Z", "time_zone": "GMT", "local_time": "12:00"}
+    ]
+  }
+}

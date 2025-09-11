@@ -21,6 +21,8 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .economic_calendar import EconomicCalendar
+
 
 class DataFetcher:
     """
@@ -53,6 +55,9 @@ class DataFetcher:
         }
         for dir_path in self.cache_dirs.values():
             os.makedirs(dir_path, exist_ok=True)
+        
+        # Initialize economic calendar
+        self.calendar = EconomicCalendar()
     
     def _create_session(self) -> requests.Session:
         """Create requests session with retry logic"""
@@ -945,6 +950,19 @@ class DataFetcher:
             self.logger.error(f"Failed to calculate sentiment: {e}")
             data['sentiment_score'] = 50
         
+        # Add economic calendar data
+        try:
+            data['calendar'] = self.calendar.get_calendar_summary(days_ahead=7)
+            self.logger.info(f"Added calendar with {len(data['calendar']['upcoming'])} upcoming events")
+        except Exception as e:
+            self.logger.error(f"Failed to fetch calendar data: {e}")
+            data['calendar'] = {
+                'today': [],
+                'upcoming': [],
+                'recent': [],
+                'high_importance_upcoming': []
+            }
+        
         self.logger.info("Morning brief data fetch complete")
         return data
     
@@ -978,6 +996,16 @@ class DataFetcher:
         
         # Get new structured data
         new_data = self.fetch_morning_brief_data()
+        
+        # Add economic calendar data
+        try:
+            calendar = EconomicCalendar()
+            calendar_summary = calendar.get_calendar_summary()
+            all_data['calendar'] = calendar_summary
+            self.logger.info("Added economic calendar data to fetch_all_data")
+        except Exception as e:
+            self.logger.error(f"Failed to load economic calendar: {e}")
+            all_data['calendar'] = {}
         
         # Map to old structure
         if 'fx' in new_data:

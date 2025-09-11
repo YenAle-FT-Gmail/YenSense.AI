@@ -7,6 +7,7 @@ Creates daily TTS-ready scripts with SSML markup
 import logging
 import os
 import sys
+import time
 from datetime import datetime
 from typing import Dict, Any
 
@@ -97,6 +98,7 @@ class MorningBriefGenerator:
             self.logger.warning("pydub not available, falling back to single voice audio")
             return self._generate_fallback_audio(segments, output_filename)
         
+        
         # Voice assignments for each domain
         voice_config = {
             'rates': {'tld': 'com'},      # US English
@@ -109,11 +111,16 @@ class MorningBriefGenerator:
         
         try:
             # Generate intro
+            self.logger.info("Starting intro TTS generation")
             intro_text = f"Good morning. This is your YenSense AI market brief for {datetime.now().strftime('%A, %B %d')}."
+            self.logger.info("Creating intro gTTS object")
             intro_tts = gTTS(text=intro_text, lang='en', tld='com')
             intro_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+            self.logger.info(f"Saving intro TTS to {intro_file.name}")
             intro_tts.save(intro_file.name)
+            self.logger.info("Loading intro audio segment")
             audio_segments.append(AudioSegment.from_mp3(intro_file.name))
+            self.logger.info("Intro TTS completed successfully")
             
             # Add brief pause
             silence = AudioSegment.silent(duration=500)  # 500ms
@@ -123,18 +130,24 @@ class MorningBriefGenerator:
                 if not text.strip():
                     continue
                     
+                self.logger.info(f"Starting {domain} segment TTS generation")
                 # Clean text for TTS
                 clean_text = text.strip()
                 
                 # Generate TTS with domain-specific voice
                 voice_settings = voice_config.get(domain, {'tld': 'com'})
+                self.logger.info(f"Creating {domain} gTTS object with {voice_settings['tld']} voice")
                 tts = gTTS(text=clean_text, lang='en', tld=voice_settings['tld'])
                 
                 # Save to temporary file
                 temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+                self.logger.info(f"Saving {domain} TTS to {temp_file.name}")
                 tts.save(temp_file.name)
+                # Add longer delay to prevent gTTS rate limiting
+                time.sleep(5)
                 
                 # Load and add to segments
+                self.logger.info(f"Loading {domain} audio segment")
                 segment_audio = AudioSegment.from_mp3(temp_file.name)
                 audio_segments.append(silence)  # Pause between segments
                 audio_segments.append(segment_audio)
