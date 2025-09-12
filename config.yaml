@@ -49,9 +49,9 @@ scraping:
 
 # Schedule settings (JST)
 schedule:
-  daily_brief_time: "10:00"
+  daily_brief_time: "06:30"
   weekly_report_day: "monday"
-  weekly_report_time: "10:00"
+  weekly_report_time: "06:30"
   timezone: "Asia/Tokyo"
 
 # GitHub Pages settings
