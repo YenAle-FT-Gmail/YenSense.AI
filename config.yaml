@@ -6,6 +6,7 @@ api_keys:
   fred: "84c8e952e951dafa44010a7ee06f0145"  # Get from https://fred.stlouisfed.org/docs/api/api_key.html
   finnhub: "d30f90hr01qnmrse9qb0d30f90hr01qnmrse9qbg"  # Get from https://finnhub.io/register
   openai: "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"  # Get from https://platform.openai.com/api-keys
+  estat: "17d46e5c7a4e388b8d19d12517898c10a67540d3"  # Get from https://www.e-stat.go.jp/mypage/user/preregister
 
 # Data fetch settings
 data:

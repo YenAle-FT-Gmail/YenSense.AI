@@ -324,6 +324,138 @@ class DataFetcher:
         data['timestamp'] = datetime.now().isoformat()
         return data
     
+    # ========== E-STAT JAPAN STATISTICS ========== #
+    
+    def fetch_estat_data(self) -> Dict[str, Any]:
+        """Fetch key Japanese economic indicators from e-stat API"""
+        cache_file = 'estat_data.json'
+        
+        # Check cache first
+        cache_path = self._get_cache_path('macro', cache_file)
+        if self._is_cache_valid(cache_path):
+            with open(cache_path, 'r') as f:
+                cached_data = json.load(f)
+                self.logger.info("Using cached e-stat data")
+                return cached_data
+        
+        data = {}
+        
+        # 1. Consumer Price Index (Tokyo - earlier indicator)
+        try:
+            cpi_data = self._fetch_estat_dataset('0003427113', 'Tokyo CPI')
+            if cpi_data:
+                data['tokyo_cpi'] = cpi_data
+        except Exception as e:
+            self.logger.error(f"Failed to fetch Tokyo CPI from e-stat: {e}")
+        
+        # 2. Machinery Orders (business investment indicator)
+        try:
+            machinery_data = self._fetch_estat_dataset('0003355266', 'Machinery Orders')
+            if machinery_data:
+                data['machinery_orders'] = machinery_data
+        except Exception as e:
+            self.logger.error(f"Failed to fetch Machinery Orders from e-stat: {e}")
+        
+        # Add timestamp
+        data['timestamp'] = datetime.now().isoformat()
+        data['source'] = 'e-stat API'
+        
+        # Cache the data
+        if data:
+            self._save_cache(data, 'macro', cache_file)
+            self.logger.info(f"Fetched e-stat data with {len(data)} indicators")
+        
+        return data
+    
+    def _fetch_estat_dataset(self, stats_data_id: str, dataset_name: str) -> Optional[Dict[str, Any]]:
+        """Fetch specific dataset from e-stat API"""
+        app_id = self.config['api_keys'].get('estat')
+        if not app_id:
+            self.logger.warning("No e-stat API key configured")
+            return None
+        
+        base_url = "http://api.e-stat.go.jp/rest/3.0/app/json/getStatsData"
+        params = {
+            'appId': app_id,
+            'statsDataId': stats_data_id,
+            'limit': 10  # Get latest 10 data points
+        }
+        
+        try:
+            response = self.session.get(base_url, params=params, timeout=15)
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            # Check API status
+            if 'GET_STATS_DATA' in result:
+                api_result = result['GET_STATS_DATA'].get('RESULT', {})
+                if api_result.get('STATUS') != 0:
+                    self.logger.error(f"e-stat API error for {dataset_name}: {api_result.get('ERROR_MSG', 'Unknown error')}")
+                    return None
+                
+                # Extract data
+                if 'STATISTICAL_DATA' in result['GET_STATS_DATA']:
+                    stat_data = result['GET_STATS_DATA']['STATISTICAL_DATA']
+                    
+                    # Handle title - can be string or dict
+                    title_field = stat_data.get('TABLE_INF', {}).get('TITLE', dataset_name)
+                    if isinstance(title_field, dict):
+                        title = title_field.get('$', dataset_name)
+                    else:
+                        title = title_field
+                    
+                    dataset_info = {
+                        'name': dataset_name,
+                        'title': title,
+                        'updated': stat_data.get('TABLE_INF', {}).get('UPDATED_DATE', 'N/A'),
+                        'values': []
+                    }
+                    
+                    # Extract actual values
+                    if 'DATA_INF' in stat_data and 'VALUE' in stat_data['DATA_INF']:
+                        values = stat_data['DATA_INF']['VALUE']
+                        # Handle both single value and list of values
+                        if isinstance(values, list):
+                            values_to_process = values
+                        else:
+                            values_to_process = [values]  # Single value, wrap in list
+                        
+                        for value_item in values_to_process:
+                            try:
+                                value_data = {
+                                    'value': float(value_item.get('$', 0)),
+                                    'time': value_item.get('@time', 'N/A'),
+                                    'area': value_item.get('@area', 'N/A'),
+                                    'category': value_item.get('@cat01', 'N/A'),
+                                    'unit': value_item.get('@unit', '')
+                                }
+                                dataset_info['values'].append(value_data)
+                            except (ValueError, KeyError) as e:
+                                continue
+                        
+                        # Get latest value for easy access
+                        if dataset_info['values']:
+                            latest = dataset_info['values'][0]
+                            dataset_info['latest_value'] = latest['value']
+                            dataset_info['latest_time'] = latest['time']
+                    
+                    self.logger.info(f"Fetched {dataset_name}: {len(dataset_info['values'])} values")
+                    return dataset_info
+                else:
+                    self.logger.warning(f"No statistical data found for {dataset_name}")
+                    return None
+            else:
+                self.logger.error(f"Invalid response structure for {dataset_name}")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Network error fetching {dataset_name} from e-stat: {e}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Error processing {dataset_name} data from e-stat: {e}")
+            return None
+    
     # ========== JAPANESE MARKET DATA SCRAPERS ========== #
     
     def fetch_jgb_curve(self) -> Dict[str, Any]:
@@ -928,6 +1060,7 @@ class DataFetcher:
         except Exception as e:
             self.logger.error(f"Failed to fetch macro data: {e}")
             data['macro'] = {'japan_cpi': 106.5, 'japan_gdp': 4231.14}
+        
         
         # Fetch news (limit to recent)
         try:
