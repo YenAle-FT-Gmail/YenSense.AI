@@ -85,6 +85,12 @@ jobs:
     - name: Generate morning brief
       run: python main.py --morning
       
+    - name: Update docs with new brief
+      run: |
+        # Copy new brief files to docs directory
+        cp data/output/briefs/morning_brief_*.txt docs/
+        cp data/output/briefs/morning_brief_*.mp3 docs/ || true
+        
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
