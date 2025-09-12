@@ -2,6 +2,7 @@
 
   - FX: USD/JPY, EUR/JPY (spot rates only)
   - Macro: Japan CPI, Japan GDP, US GDP from FRED
+  - Economic Calendar: Trading Economics via Selenium (G3 events, bond auctions, 2-month forward)
   - News: Placeholder links (not actual headlines)
   - BOJ: Placeholder links (not actual policy content)
   - Repo: None
@@ -56,15 +57,17 @@
 
   Currently missing:
   - Recent economic releases with actual vs expected
-  - Forward calendar
   - Real news headlines
 
   Should include:
   - Latest economic data releases (actual vs forecast vs previous)
-  - Upcoming data calendar (today/this week)
-  - BOJ meeting dates and policy expectations
   - Real news headlines about policy/economy
   - Market expectations/consensus
+
+  Currently available:
+  - Forward calendar via Trading Economics Selenium scraper (G3 economic events, bond auctions)
+  - 2-month forward visibility with 24-hour caching
+  - Automated filtering for high and low impact events
 
   DATA ENHANCEMENT NEEDED:
 
@@ -73,7 +76,9 @@
   2. JGB yield data - Add MOF/Bloomberg proxy for yield curve
   3. Overnight ranges - Get high/low for FX pairs
   4. Repo data - Add basic repo rates and spreads
-  5. Economic calendar - Forward-looking events
+
+  Already completed:
+  5. ✅ Economic calendar - Trading Economics Selenium scraper provides G3 economic events and bond auctions with 2-month forward visibility
 
   Quality improvements:
   1. Historical context - Previous day/week/month for comparison

@@ -25,6 +25,7 @@ This approach produces evidence-based analysis where AI questions its assumption
   - **FRED**: US Treasury curve, FX rates, macro data (authoritative source for US rates)
   - **JBOND**: Complete JGB yield curve 3M-40Y (authoritative source for JGB rates)  
   - **Tokyo Tanshi**: Repo rates, TONA, funding conditions
+  - **Trading Economics**: Economic calendar with 2-month forward visibility via Selenium web scraping
   - **BOJ/Reuters/Nikkei**: Policy updates and market news
 - **AI-Powered Analysis**: OpenAI GPT-5-mini for intelligent market insights
 - **Sentiment Analysis**: Dynamic sentiment scoring based on multiple factors
@@ -36,6 +37,8 @@ This approach produces evidence-based analysis where AI questions its assumption
 ### Prerequisites
 
 - Python 3.11 or higher
+- Chrome browser (for Selenium web scraping)
+- ChromeDriver (automatically managed by webdriver-manager)
 - Git (for GitHub Pages deployment)
 - Internet connection for data fetching
 
@@ -156,7 +159,10 @@ YenSense.AI/
 ## Data Sources
 
 - **Foreign Exchange**: Alpha Vantage (USD/JPY, EUR/JPY)
-- **Macroeconomic Data**: FRED (CPI, GDP)
+- **Macroeconomic Data**: FRED (CPI, GDP, US Treasury rates)
+- **Economic Calendar**: Trading Economics (G3 economic events, bond auctions) via Selenium web scraping
+- **JGB Rates**: JBOND (complete yield curve 3M-40Y)
+- **Repo Markets**: Tokyo Tanshi (funding rates, TONA)
 - **Japan Policy**: Bank of Japan website
 - **Market News**: Reuters RSS, Nikkei Asia
 - **Additional Sources**: Configurable via config.yaml

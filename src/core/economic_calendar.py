@@ -14,6 +14,17 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
+# Import the Trading Economics scrapers
+try:
+    from ..scrapers.trading_economics_scraper import TradingEconomicsScraper
+    from ..scrapers.trading_economics_selenium_scraper import TradingEconomicsSeleniumScraper
+except ImportError:
+    # Fallback for when running as standalone script
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from scrapers.trading_economics_scraper import TradingEconomicsScraper
+    from scrapers.trading_economics_selenium_scraper import TradingEconomicsSeleniumScraper
+
 
 @dataclass
 class EconomicEvent:
@@ -68,6 +79,21 @@ class EconomicCalendar:
         except Exception as e:
             self.logger.warning(f"Could not load config: {e}")
             self.config = {'api_keys': {}}
+            
+        # Initialize Trading Economics scrapers (prioritize Selenium)
+        try:
+            self.selenium_scraper = TradingEconomicsSeleniumScraper(cache_dir=self.data_dir)
+            self.logger.info("Initialized Selenium-based Trading Economics scraper")
+        except Exception as e:
+            self.logger.warning(f"Failed to initialize Selenium scraper: {e}")
+            self.selenium_scraper = None
+            
+        try:
+            self.trading_scraper = TradingEconomicsScraper(cache_dir=self.data_dir)
+            self.logger.info("Initialized basic Trading Economics scraper as fallback")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize basic Trading Economics scraper: {e}")
+            self.trading_scraper = None
         
     def _load_central_bank_data(self) -> Dict[str, Any]:
         """Load central bank meetings from JSON file with caching"""
@@ -327,6 +353,228 @@ class EconomicCalendar:
         
         return events
     
+    def get_trading_economics_events(self, start_date: datetime, end_date: datetime) -> List[EconomicEvent]:
+        """Get events from Trading Economics scraper (prioritizes Selenium)"""
+        
+        # Try Selenium scraper first (comprehensive with bond auctions)
+        if self.selenium_scraper:
+            try:
+                self.logger.info("Using Selenium-based Trading Economics scraper")
+                calendar_data = self.selenium_scraper.scrape_calendar(months_ahead=2)
+                
+                events = []
+                
+                # Process regular events from Selenium scraper
+                for event_data in calendar_data.get('events', []):
+                    try:
+                        # Parse datetime from Selenium format (already in UTC)
+                        datetime_utc_str = event_data.get('datetime_utc')
+                        if datetime_utc_str:
+                            event_dt = datetime.fromisoformat(datetime_utc_str)
+                            
+                            if start_date <= event_dt <= end_date:
+                                # Create EconomicEvent object
+                                event = EconomicEvent(
+                                    date=event_dt,
+                                    time_local=event_data.get('time_display', 'TBD UTC'),
+                                    event_name=event_data['event_name'],
+                                    country=event_data['country'],
+                                    currency=event_data['currency'],
+                                    importance=event_data['importance'],
+                                    category=event_data['category'],
+                                    source='trading_economics_selenium',
+                                    description=f"{event_data['country']} economic data: {event_data['event_name']}"
+                                )
+                                events.append(event)
+                                
+                    except Exception as e:
+                        self.logger.warning(f"Error processing Selenium event: {e}")
+                        continue
+                
+                # Process bond auctions from Selenium scraper
+                for auction_data in calendar_data.get('bond_auctions', []):
+                    try:
+                        # Parse datetime from Selenium format (already in UTC)
+                        datetime_utc_str = auction_data.get('datetime_utc')
+                        if datetime_utc_str:
+                            event_dt = datetime.fromisoformat(datetime_utc_str)
+                            
+                            if start_date <= event_dt <= end_date:
+                                # Create EconomicEvent object for bond auction
+                                event = EconomicEvent(
+                                    date=event_dt,
+                                    time_local=auction_data.get('time_display', 'TBD UTC'),
+                                    event_name=auction_data['event_name'],
+                                    country=auction_data['country'],
+                                    currency=auction_data['currency'],
+                                    importance=auction_data.get('importance', 3),
+                                    category='fixed_income',
+                                    source='trading_economics_selenium',
+                                    description=f"{auction_data['country']} bond auction: {auction_data['event_name']}"
+                                )
+                                events.append(event)
+                                
+                    except Exception as e:
+                        self.logger.warning(f"Error processing Selenium bond auction: {e}")
+                        continue
+                        
+                self.logger.info(f"Retrieved {len(events)} events from Selenium Trading Economics scraper")
+                return events
+                
+            except Exception as e:
+                self.logger.warning(f"Selenium scraper failed, falling back to basic scraper: {e}")
+        
+        # Fallback to basic scraper
+        if not self.trading_scraper:
+            self.logger.warning("No Trading Economics scrapers available")
+            return []
+            
+        try:
+            self.logger.info("Using basic Trading Economics scraper as fallback")
+            # Get calendar data from basic Trading Economics scraper
+            calendar_data = self.trading_scraper.scrape_calendar()
+            
+            events = []
+            
+            # Process regular events (basic scraper format)
+            for event_data in calendar_data.get('events', []):
+                try:
+                    # Parse date from basic Trading Economics format
+                    date_str = event_data['date']
+                    time_str = event_data.get('time', '')
+                    
+                    # Convert to datetime (simplified parsing for now)
+                    event_dt = self._parse_trading_economics_date(date_str, time_str, event_data['timezone'])
+                    
+                    if event_dt and start_date <= event_dt <= end_date:
+                        # Create EconomicEvent object
+                        event = EconomicEvent(
+                            date=event_dt,
+                            time_local=f"{time_str} {event_data['timezone']}" if time_str else f"TBD {event_data['timezone']}",
+                            event_name=event_data['event_name'],
+                            country=event_data['country'],
+                            currency=event_data['currency'],
+                            importance=event_data['importance'],
+                            category=event_data['category'],
+                            source='trading_economics_basic',
+                            description=f"{event_data['country']} economic data: {event_data['event_name']}"
+                        )
+                        events.append(event)
+                        
+                except Exception as e:
+                    self.logger.warning(f"Error processing basic Trading Economics event: {e}")
+                    continue
+            
+            # Process bond auctions (basic scraper format)
+            for auction_data in calendar_data.get('bond_auctions', []):
+                try:
+                    # Parse date from basic Trading Economics format
+                    date_str = auction_data['date']
+                    time_str = auction_data.get('time', '')
+                    
+                    # Convert to datetime
+                    event_dt = self._parse_trading_economics_date(date_str, time_str, auction_data['timezone'])
+                    
+                    if event_dt and start_date <= event_dt <= end_date:
+                        # Create EconomicEvent object for bond auction
+                        event = EconomicEvent(
+                            date=event_dt,
+                            time_local=f"{time_str} {auction_data['timezone']}" if time_str else f"TBD {auction_data['timezone']}",
+                            event_name=auction_data['event_name'],
+                            country=auction_data['country'],
+                            currency=auction_data['currency'],
+                            importance=auction_data['importance'],
+                            category='fixed_income',
+                            source='trading_economics_basic',
+                            description=f"{auction_data['country']} bond auction: {auction_data['event_name']}"
+                        )
+                        events.append(event)
+                        
+                except Exception as e:
+                    self.logger.warning(f"Error processing basic Trading Economics bond auction: {e}")
+                    continue
+                    
+            self.logger.info(f"Retrieved {len(events)} events from basic Trading Economics scraper")
+            return events
+            
+        except Exception as e:
+            self.logger.error(f"Error retrieving Trading Economics events: {e}")
+            return []
+    
+    def _parse_trading_economics_date(self, date_str: str, time_str: str, timezone_str: str) -> Optional[datetime]:
+        """Parse date from Trading Economics format"""
+        try:
+            # Handle different date formats
+            if 'Today' in date_str:
+                base_date = datetime.now()
+            elif 'Tomorrow' in date_str:
+                base_date = datetime.now() + timedelta(days=1)
+            else:
+                # Parse date string like "Thursday September 11 2025"
+                # Remove day of week and parse the rest
+                parts = date_str.split()
+                if len(parts) >= 3:
+                    # Find month, day, year
+                    month_str = parts[-3] if len(parts) >= 3 else parts[1]
+                    day_str = parts[-2] if len(parts) >= 3 else parts[2]
+                    year_str = parts[-1] if len(parts) >= 3 else "2025"
+                    
+                    # Parse month name to number
+                    month_map = {
+                        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                        'September': 9, 'October': 10, 'November': 11, 'December': 12
+                    }
+                    
+                    month_num = month_map.get(month_str, 1)
+                    day_num = int(day_str)
+                    year_num = int(year_str)
+                    
+                    base_date = datetime(year_num, month_num, day_num)
+                else:
+                    # Fallback to current date
+                    base_date = datetime.now()
+            
+            # Parse time if provided
+            if time_str and ':' in time_str:
+                # Parse time like "08:30 AM" or "14:00"
+                time_part = time_str.split()[0]  # Get just the time part
+                if 'AM' in time_str or 'PM' in time_str:
+                    hour, minute = time_part.split(':')
+                    hour = int(hour)
+                    minute = int(minute)
+                    if 'PM' in time_str and hour != 12:
+                        hour += 12
+                    elif 'AM' in time_str and hour == 12:
+                        hour = 0
+                else:
+                    hour, minute = time_part.split(':')
+                    hour = int(hour)
+                    minute = int(minute)
+                
+                event_dt = base_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            else:
+                # Default to 9 AM if no time specified
+                event_dt = base_date.replace(hour=9, minute=0, second=0, microsecond=0)
+            
+            # Convert to UTC based on timezone
+            timezone_offsets = {
+                'ET': -5,   # Eastern Time (EST)
+                'JST': 9,   # Japan Standard Time
+                'CET': 1,   # Central European Time
+                'GMT': 0,   # Greenwich Mean Time
+                'UTC': 0    # UTC
+            }
+            
+            offset_hours = timezone_offsets.get(timezone_str, 0)
+            utc_dt = event_dt - timedelta(hours=offset_hours)
+            
+            return utc_dt
+            
+        except Exception as e:
+            self.logger.warning(f"Error parsing date '{date_str}' '{time_str}': {e}")
+            return None
+    
     def get_events(self, start_date: datetime, end_date: datetime) -> List[EconomicEvent]:
         """Get all economic events for date range"""
         all_events = []
@@ -334,11 +582,20 @@ class EconomicCalendar:
         # Get central bank meetings
         all_events.extend(self.get_central_bank_events(start_date, end_date))
         
-        # Get recurring events (NFP, CPI, etc.)
-        all_events.extend(self.get_recurring_events(start_date, end_date))
-        
-        # Get FRED economic releases
-        all_events.extend(self.get_fred_events(start_date, end_date))
+        # Get Trading Economics events (primary source)
+        trading_events = self.get_trading_economics_events(start_date, end_date)
+        if trading_events:
+            all_events.extend(trading_events)
+            self.logger.info(f"Added {len(trading_events)} Trading Economics events")
+        else:
+            # Fallback to legacy sources if Trading Economics fails
+            self.logger.warning("Trading Economics unavailable, using fallback sources")
+            
+            # Get recurring events (NFP, CPI, etc.)
+            all_events.extend(self.get_recurring_events(start_date, end_date))
+            
+            # Get FRED economic releases
+            all_events.extend(self.get_fred_events(start_date, end_date))
         
         # Sort by date
         all_events.sort(key=lambda x: x.date)
