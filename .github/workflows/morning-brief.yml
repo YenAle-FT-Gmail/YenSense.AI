@@ -1,0 +1,94 @@
+name: Daily Morning Brief
+
+on:
+  schedule:
+    # 6:30 AM JST = 9:30 PM UTC (previous day)
+    - cron: '30 21 * * 0-4'  # Sunday-Thursday (Mon-Fri JST)
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-brief:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Create config with secrets
+      run: |
+        cat > config.yaml << EOF
+        api_keys:
+          alpha_vantage: "${{ secrets.ALPHA_VANTAGE_API_KEY }}"
+          fred: "${{ secrets.FRED_API_KEY }}"
+          finnhub: "${{ secrets.FINNHUB_API_KEY }}"
+          openai: "${{ secrets.OPENAI_API_KEY }}"
+          estat: "${{ secrets.ESTAT_API_KEY }}"
+
+        data:
+          fx_pairs:
+            - "USD/JPY"
+            - "EUR/JPY"
+          cache_expiry_hours: 24
+          retry_attempts: 3
+          retry_delay_seconds: 5
+
+        output:
+          morning_brief:
+            target_wpm: 150
+            target_duration_seconds: 180
+          weekly_report:
+            target_word_count: 800
+            chart_height: 500
+            chart_width: 900
+
+        scraping:
+          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          timeout_seconds: 10
+          targets:
+            - name: "BOJ"
+              url: "https://www.boj.or.jp/en/"
+              type: "policy"
+            - name: "Reuters Japan"  
+              url: "https://www.reuters.com/markets/asia/"
+              type: "news"
+            - name: "Nikkei"
+              url: "https://asia.nikkei.com/Economy"
+              type: "news"
+
+        schedule:
+          daily_brief_time: "06:30"
+          weekly_report_day: "monday"
+          weekly_report_time: "06:30"
+          timezone: "Asia/Tokyo"
+
+        github_pages:
+          branch: "gh-pages"
+          directory: "docs"
+          enabled: true
+
+        logging:
+          level: "INFO"
+          file: "logs/system.log"
+          max_size_mb: 10
+          backup_count: 5
+        EOF
+        
+    - name: Generate morning brief
+      run: python main.py --morning
+      
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        publish_branch: gh-pages
+        force_orphan: true
