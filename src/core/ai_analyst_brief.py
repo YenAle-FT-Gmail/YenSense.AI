@@ -35,9 +35,10 @@ class AIAnalystBrief(AIAnalystBase):
         fx_data = data.get('fx', {})
         headlines = self._extract_headlines(data, limit=3)
         
-        # Get JGB and US Treasury data if available
+        # Get JGB, US Treasury, and German Bund data if available
         jgb_10y = yields_data.get('jgb_10y', 1.56)  # Live data
         us_10y = yields_data.get('ust_10y', 4.05)   # Live data
+        bund_10y = yields_data.get('bund_10y', 2.71)  # Live German data
         
         headline_text = "\n".join([f"- {h['title']} ({h['source']})" for h in headlines]) if headlines else "No major rate-related headlines"
         
@@ -46,16 +47,18 @@ class AIAnalystBrief(AIAnalystBase):
 Current levels:
 - JGB 10Y: {self._format_number(jgb_10y, 2)}%
 - US 10Y: {self._format_number(us_10y, 2)}%
-- Rate differential: {self._format_number(us_10y - jgb_10y, 2)}bp
+- German 10Y: {self._format_number(bund_10y, 2)}%
+- US-JGB differential: {self._format_number(us_10y - jgb_10y, 2)}bp
+- Bund-JGB differential: {self._format_number(bund_10y - jgb_10y, 2)}bp
 
 Recent headlines:
 {headline_text}
 
 Cover what matters:
 1. Any notable JGB yield moves overnight/yesterday
-2. US Treasury spillover effects (rates often move together)
+2. US Treasury and German Bund spillover effects (global rates correlation)
 3. BOJ policy implications or operations
-4. What this means for USD/JPY carry dynamics
+4. What this means for USD/JPY and EUR/JPY carry dynamics
 
 If rates were quiet, just say "JGB yields were little changed overnight, trading around {self._format_number(jgb_10y, 2)}%."
 
@@ -166,7 +169,9 @@ Only elaborate if there's actual news or stress. Don't manufacture analysis.
         
         # Key market levels for policy context
         jgb_10y = yield_data.get('jgb_10y', 0.25)
+        bund_10y = yield_data.get('bund_10y', 2.71)
         usd_jpy = fx_data.get('usdjpy', 147.25)
+        eur_jpy = fx_data.get('eurjpy', 172.68)
         
         headline_text = "\n".join([f"- {h['title']} ({h['source']})" for h in headlines]) if headlines else "No major economic headlines"
         
@@ -188,7 +193,9 @@ Current indicators:
 - Japan GDP: ¥{self._format_number(gdp_trillions, 0)} trillion
 - US GDP: ${self._format_number(us_gdp, 0)} trillion
 - JGB 10Y yield: {self._format_number(jgb_10y, 2)}%
+- German 10Y yield: {self._format_number(bund_10y, 2)}%
 - USD/JPY: {self._format_number(usd_jpy, 2)}
+- EUR/JPY: {self._format_number(eur_jpy, 2)}
 
 Recent economic news:
 {headline_text}

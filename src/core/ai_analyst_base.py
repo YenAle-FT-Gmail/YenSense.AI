@@ -5,6 +5,7 @@ Provides common functionality for both brief and report analysts
 """
 
 import logging
+import os
 from typing import Dict, Any
 
 import requests
@@ -20,7 +21,9 @@ class AIAnalystBase:
             self.config = yaml.safe_load(f)
         
         self.logger = logging.getLogger(__name__)
-        self.api_key = self.config['api_keys'].get('openai')
+        
+        # Check environment variable first, then config file
+        self.api_key = os.getenv('OPENAI_API_KEY') or self.config['api_keys'].get('openai')
         
         if not self.api_key or self.api_key == "YOUR_OPENAI_API_KEY":
             self.logger.warning("OpenAI API key not configured - using fallback analysis")

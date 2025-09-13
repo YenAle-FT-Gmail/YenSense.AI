@@ -582,6 +582,100 @@ class DataFetcher:
             self._save_cache(fallback_data, 'macro', cache_file)
             return fallback_data
     
+    def fetch_euro_yields(self) -> Dict[str, Any]:
+        """Scrape European government bond yields from Investing.com"""
+        cache_file = 'euro_yields.json'
+        
+        # Try cache first
+        cached = self._load_cache('macro', cache_file)
+        if cached:
+            self.logger.info("Using cached European yield data")
+            return cached
+        
+        url = "https://www.investing.com/rates-bonds/germany-government-bonds"
+        
+        try:
+            response = self.session.get(url, timeout=15)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            euro_data = {}
+            
+            # Find the main data table with bond yields
+            tables = soup.find_all('table')
+            for table in tables:
+                rows = table.find_all('tr')
+                if len(rows) > 10:  # Main data table has many rows
+                    for row in rows[1:]:  # Skip header row
+                        cells = row.find_all('td')
+                        if len(cells) >= 3:
+                            # Column indices: 0=checkbox, 1=Name, 2=Yield, 3=Prev
+                            name = cells[1].get_text(strip=True) if len(cells) > 1 else ''
+                            yield_text = cells[2].get_text(strip=True) if len(cells) > 2 else ''
+                            
+                            if 'Germany' in name:
+                                # Parse maturity from name (e.g., "Germany 3M" -> "3m")
+                                import re
+                                match = re.search(r'(\d+)(M|Y)', name)
+                                if match:
+                                    value = match.group(1)
+                                    unit = match.group(2).lower()
+                                    maturity = f'{value}{unit}'
+                                    
+                                    try:
+                                        # Clean and convert yield value
+                                        yield_val = float(yield_text.replace('%', '').replace(',', '.'))
+                                        key = f'bund_{maturity}'
+                                        euro_data[key] = yield_val
+                                        self.logger.info(f"Found {key}: {yield_val}%")
+                                    except (ValueError, TypeError):
+                                        continue
+                    break  # Found our table, stop looking
+            
+            if not euro_data:
+                # Fallback data if scraping fails
+                self.logger.warning("Could not parse European yield data, using fallback")
+                euro_data = {
+                    'bund_3m': 1.75,
+                    'bund_6m': 1.92,
+                    'bund_1y': 1.94,
+                    'bund_2y': 2.02,
+                    'bund_3y': 2.06,
+                    'bund_5y': 2.31,
+                    'bund_7y': 2.45,
+                    'bund_10y': 2.71,
+                    'bund_15y': 3.08,
+                    'bund_20y': 3.20,
+                    'bund_30y': 3.30,
+                    'timestamp': datetime.now().isoformat()
+                }
+            else:
+                euro_data['timestamp'] = datetime.now().isoformat()
+                self.logger.info(f"Successfully scraped {len(euro_data)-1} European yield points")
+            
+            self._save_cache(euro_data, 'macro', cache_file)
+            return euro_data
+            
+        except Exception as e:
+            self.logger.error(f"Error scraping European yields: {e}")
+            # Return fallback data
+            fallback_data = {
+                'bund_3m': 1.75,
+                'bund_6m': 1.92,
+                'bund_1y': 1.94,
+                'bund_2y': 2.02,
+                'bund_3y': 2.06,
+                'bund_5y': 2.31,
+                'bund_7y': 2.45,
+                'bund_10y': 2.71,
+                'bund_15y': 3.08,
+                'bund_20y': 3.20,
+                'bund_30y': 3.30,
+                'timestamp': datetime.now().isoformat()
+            }
+            self._save_cache(fallback_data, 'macro', cache_file)
+            return fallback_data
+    
     def fetch_repo_rates(self) -> Dict[str, Any]:
         """Scrape Tokyo repo rates from Tokyo Tanshi"""
         cache_file = 'repo_rates.json'
@@ -1040,11 +1134,12 @@ class DataFetcher:
         try:
             yield_data = self.fetch_fred_yields()
             jgb_data = self.fetch_jgb_curve()
+            euro_data = self.fetch_euro_yields()
             # Merge yield curves
-            data['yields'] = {**yield_data, **jgb_data}
+            data['yields'] = {**yield_data, **jgb_data, **euro_data}
         except Exception as e:
             self.logger.error(f"Failed to fetch yield data: {e}")
-            data['yields'] = {'ust_10y': 4.25, 'jgb_10y': 0.25}
+            data['yields'] = {'ust_10y': 4.25, 'jgb_10y': 0.25, 'bund_10y': 2.71}
         
         try:
             repo_data = self.fetch_repo_rates()

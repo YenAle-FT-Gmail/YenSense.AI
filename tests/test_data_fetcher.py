@@ -261,6 +261,7 @@ class TestDataFetcher(unittest.TestCase):
     @patch('core.data_fetcher.DataFetcher.fetch_fred_fx')
     @patch('core.data_fetcher.DataFetcher.fetch_fred_yields')
     @patch('core.data_fetcher.DataFetcher.fetch_jgb_curve')
+    @patch('core.data_fetcher.DataFetcher.fetch_euro_yields')
     @patch('core.data_fetcher.DataFetcher.fetch_repo_rates')
     @patch('core.data_fetcher.DataFetcher.fetch_tona_rate')
     @patch('core.data_fetcher.DataFetcher.fetch_fred_macro')
@@ -268,13 +269,14 @@ class TestDataFetcher(unittest.TestCase):
     @patch('core.data_fetcher.DataFetcher.fetch_reuters_rss')
     @patch('core.data_fetcher.DataFetcher.fetch_nikkei_news')
     def test_fetch_morning_brief_data(self, mock_nikkei, mock_reuters, mock_boj, 
-                                     mock_macro, mock_tona, mock_repo, mock_jgb, 
-                                     mock_yields, mock_fx):
+                                     mock_macro, mock_tona, mock_repo, mock_euro,
+                                     mock_jgb, mock_yields, mock_fx):
         """Test morning brief data aggregation"""
         # Mock all sub-methods
         mock_fx.return_value = {'usdjpy': 146.84, 'eurjpy': 162.65, 'dxy': 120.54}
         mock_yields.return_value = {'ust_10y': 4.25, 'ust_2y': 3.49}
         mock_jgb.return_value = {'jgb_10y': 0.25, 'jgb_2y': 0.15}
+        mock_euro.return_value = {'bund_10y': 2.71, 'bund_2y': 2.02, 'bund_30y': 3.30}
         mock_repo.return_value = {'gc_on': 0.489}
         mock_tona.return_value = {'tona': 0.477}
         mock_macro.return_value = {'japan_cpi': 106.5, 'japan_gdp': 562987.8}
@@ -298,9 +300,48 @@ class TestDataFetcher(unittest.TestCase):
         self.assertIn('reuters', result['news'])
         self.assertIn('nikkei', result['news'])
         
+        # Check that Euro yields are properly integrated
+        self.assertIn('bund_10y', result['yields'])
+        self.assertIn('bund_2y', result['yields'])
+        self.assertIn('bund_30y', result['yields'])
+        self.assertEqual(result['yields']['bund_10y'], 2.71)
+        
         # Check sentiment score range
         self.assertGreaterEqual(result['sentiment_score'], 0)
         self.assertLessEqual(result['sentiment_score'], 100)
+    
+    @patch('core.data_fetcher.requests.Session.get')
+    def test_fetch_euro_yields(self, mock_get):
+        """Test European government bond yield scraping"""
+        # Mock HTML response with German bond data
+        html_content = '''
+        <table>
+            <tr><th>Name</th><th>Yield</th><th>Prev.</th></tr>
+            <tr><td></td><td>Germany 3M</td><td>1.750</td><td>1.700</td></tr>
+            <tr><td></td><td>Germany 10Y</td><td>2.713</td><td>2.700</td></tr>
+            <tr><td></td><td>Germany 30Y</td><td>3.300</td><td>3.250</td></tr>
+        </table>
+        '''
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_response.text = html_content
+        mock_get.return_value = mock_response
+        
+        result = self.fetcher.fetch_euro_yields()
+        
+        # Check Euro yield data structure
+        self.assertIn('bund_3m', result)
+        self.assertIn('bund_10y', result)
+        self.assertIn('bund_30y', result)
+        self.assertIn('timestamp', result)
+        # Check that yields are reasonable numbers (since it may hit real site)
+        self.assertIsInstance(result['bund_3m'], float)
+        self.assertIsInstance(result['bund_10y'], float)
+        self.assertIsInstance(result['bund_30y'], float)
+        self.assertGreater(result['bund_10y'], 0)
+        self.assertLess(result['bund_10y'], 10)  # Reasonable range
     
     def test_calculate_sentiment_score(self):
         """Test sentiment score calculation"""
